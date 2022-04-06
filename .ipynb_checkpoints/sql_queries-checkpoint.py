@@ -31,31 +31,57 @@ CREATE TABLE IF NOT EXISTS staging_songs (
 
 songplay_table_create = ("""
 CREATE TABLE IF NOT EXISTS songplays (
-
+songplay_id, 
+start_time, 
+user_id, 
+level, 
+song_id, 
+artist_id, 
+session_id, 
+location, 
+user_agent
 )
 """)
 
 user_table_create = ("""
 CREATE TABLE IF NOT EXISTS users (
-
+user_id, 
+first_name, 
+last_name, 
+gender, 
+level
 )
 """)
 
 song_table_create = ("""
 CREATE TABLE IF NOT EXISTS songs (
-
+song_id, 
+title, 
+artist_id, 
+year, 
+duration
 )
 """)
 
 artist_table_create = ("""
 CREATE TABLE IF NOT EXISTS artist (
-
+artist_id, 
+name, 
+location, 
+latitude, 
+longitude
 )
 """)
 
 time_table_create = ("""
 CREATE TABLE IF NOT EXISTS time (
-
+start_time, 
+hour, 
+day, 
+week, 
+month, 
+year, 
+weekday
 )
 """)
 
