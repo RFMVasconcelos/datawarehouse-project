@@ -43,6 +43,7 @@ userId int
 
 staging_songs_table_create = ("""
 CREATE TABLE IF NOT EXISTS staging_songs (
+songs_event_id serial PRIMARY KEY,
 num_songs smallint,
 artist_id varchar,
 artist_latitude varchar,
@@ -117,14 +118,15 @@ weekday varchar
 staging_events_copy = ("""
     COPY staging_events FROM 's3://udacity-dend/log_data'
     credentials 'aws_iam_role=ARN'
+
     region 'us-west-2';
-""").format(ARN)
+""").format()
 
 staging_songs_copy = ("""
     COPY staging_songs FROM 's3://udacity-dend/song_data'
     credentials 'aws_iam_role=ARN'
     region 'us-west-2';
-""").format(ARN)
+""").format()
 
 # FINAL TABLES
 
