@@ -19,7 +19,7 @@ time_table_drop = "DROP TABLE IF EXISTS time"
 
 staging_events_table_create= ("""
 CREATE TABLE IF NOT EXISTS staging_events (
-event_id serial PRIMARY KEY,
+event_id int PRIMARY KEY,
 artist varchar,
 auth varchar,
 firstName varchar,
@@ -43,7 +43,6 @@ userId int
 
 staging_songs_table_create = ("""
 CREATE TABLE IF NOT EXISTS staging_songs (
-songs_event_id serial PRIMARY KEY,
 num_songs smallint,
 artist_id varchar,
 artist_latitude varchar,
@@ -53,15 +52,15 @@ artist_name varchar,
 song_id varchar,
 title varchar,
 duration float,
-year smallint,
+year smallint
 )
 """)
 
 songplay_table_create = ("""
 CREATE TABLE IF NOT EXISTS songplays (
-songplay_id SERIAL PRIMARY KEY, 
+songplay_id int PRIMARY KEY, 
 start_time TIMESTAMP NOT NULL, 
-user_id serial NOT NULL, 
+user_id int NOT NULL, 
 level varchar, 
 song_id varchar, 
 artist_id varchar, 
@@ -117,16 +116,15 @@ weekday varchar
 
 staging_events_copy = ("""
     COPY staging_events FROM 's3://udacity-dend/log_data'
-    credentials 'aws_iam_role=ARN'
-
+    credentials 'aws_iam_role={}'
     region 'us-west-2';
-""").format()
+""").format(*config['IAM']['IAM_ARN'])
 
 staging_songs_copy = ("""
     COPY staging_songs FROM 's3://udacity-dend/song_data'
-    credentials 'aws_iam_role=ARN'
+    credentials 'aws_iam_role={}'
     region 'us-west-2';
-""").format()
+""").format(*config['IAM']['IAM_ARN'])
 
 # FINAL TABLES
 
