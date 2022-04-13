@@ -19,41 +19,40 @@ time_table_drop = "DROP TABLE IF EXISTS time"
 ## Staging tables
 staging_events_table_create= ("""
     CREATE TABLE IF NOT EXISTS staging_events (
-    event_id int IDENTITY(0,1),
-    artist varchar,
-    auth varchar,
-    firstName varchar,
-    gender varchar,
-    itemInSession int,
-    lastName varchar,
-    length float,
-    level varchar,
-    location varchar, 
-    method varchar,
-    page varchar,
-    registration float,
-    sessionId int,
-    song varchar, 
-    status int,
-    ts timestamp,
-    userAgent varchar, 
-    userId int,
-    PRIMARY KEY(event_id)
-)
+    event_id       int IDENTITY(0,1),
+    artist_name    varchar,
+    auth           varchar,
+    firstName      varchar,
+    gender         varchar,
+    iteInSession   int,
+    lastName       varchar,
+    length         float, 
+    level          varchar,
+    location       varchar,
+    method         varchar,
+    page           varchar,
+    registration   varchar,
+    session_id     int,
+    song_title     varchar,
+    status         int,
+    ts             varchar,
+    user_agent     varchar,
+    user_id        varchar,
+    PRIMARY KEY (event_id))
 """)
 
 staging_songs_table_create = ("""
 CREATE TABLE IF NOT EXISTS staging_songs (
-    num_songs smallint,
-    artist_id varchar,
-    artist_latitude varchar,
+    song_id          varchar,
+    num_songs        int,
+    artist_id        varchar,
+    artist_latitude  varchar,
     artist_longitude varchar,
-    artist_location varchar,
-    artist_name varchar,
-    song_id varchar,
-    title varchar,
-    duration float,
-    year smallint,
+    artist_location  varchar,
+    artist_name      varchar,
+    title            varchar,
+    duration         float,
+    year             int,
     PRIMARY KEY(song_id)
 )
 """)
@@ -127,6 +126,7 @@ staging_events_copy = (
     copy         staging_events 
     from         {}
     credentials  'aws_iam_role={}'
+    region       'us-west-2'
     COMPUPDATE OFF STATUPDATE OFF
     json         {};
     """).format(config['S3']['LOG_DATA'], 
@@ -139,6 +139,7 @@ staging_songs_copy = (
     from         {}
     credentials  'aws_iam_role={}'
     region       'us-west-2'
+    COMPUPDATE OFF STATUPDATE OFF
     json         'auto'
     """).format(config['S3']['SONG_DATA'], 
                 config['IAM']['IAM_ARN'])
@@ -151,7 +152,6 @@ INSERT INTO songplays
 start_time, user_id, level, song_id, artist_id, session_id, location, user_agent
 )
 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-
 """)
 
 user_table_insert = ("""
