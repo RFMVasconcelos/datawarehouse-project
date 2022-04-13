@@ -16,116 +16,134 @@ time_table_drop = "DROP TABLE IF EXISTS time"
 
 # CREATE TABLES
 
+## Staging tables
 staging_events_table_create= ("""
-CREATE TABLE IF NOT EXISTS staging_events (
-event_id IDENTITY(0,1),
-artist varchar,
-auth varchar,
-firstName varchar,
-gender varchar,
-itemInSession int,
-lastName varchar,
-length float,
-level varchar,
-location varchar, 
-method varchar,
-page varchar,
-registration float,
-sessionId int,
-song varchar, 
-status int,
-ts timestamp,
-userAgent varchar, 
-userId int
+    CREATE TABLE IF NOT EXISTS staging_events (
+    event_id int IDENTITY(0,1),
+    artist varchar,
+    auth varchar,
+    firstName varchar,
+    gender varchar,
+    itemInSession int,
+    lastName varchar,
+    length float,
+    level varchar,
+    location varchar, 
+    method varchar,
+    page varchar,
+    registration float,
+    sessionId int,
+    song varchar, 
+    status int,
+    ts timestamp,
+    userAgent varchar, 
+    userId int,
+    PRIMARY KEY(event_id)
 )
 """)
 
 staging_songs_table_create = ("""
 CREATE TABLE IF NOT EXISTS staging_songs (
-num_songs smallint,
-artist_id varchar,
-artist_latitude varchar,
-artist_longitude varchar,
-artist_location varchar,
-artist_name varchar,
-song_id varchar,
-title varchar,
-duration float,
-year smallint
+    num_songs smallint,
+    artist_id varchar,
+    artist_latitude varchar,
+    artist_longitude varchar,
+    artist_location varchar,
+    artist_name varchar,
+    song_id varchar,
+    title varchar,
+    duration float,
+    year smallint,
+    PRIMARY KEY(song_id)
 )
 """)
 
+## OLAP tables
 songplay_table_create = ("""
 CREATE TABLE IF NOT EXISTS songplays (
-songplay_id int, 
-start_time TIMESTAMP NOT NULL, 
-user_id int NOT NULL, 
-level varchar, 
-song_id varchar, 
-artist_id varchar, 
-session_id varchar, 
-location varchar, 
-user_agent varchar
+    songplay_id varchar, 
+    start_time TIMESTAMP NOT NULL, 
+    user_id varchar NOT NULL, 
+    level varchar, 
+    song_id varchar, 
+    artist_id varchar, 
+    session_id varchar, 
+    location varchar, 
+    user_agent varchar,
+    PRIMARY KEY(songplay_id)
 )
 """)
 
 user_table_create = ("""
 CREATE TABLE IF NOT EXISTS users (
-user_id varchar, 
-first_name varchar, 
-last_name varchar, 
-gender varchar, 
-level varchar
+    user_id varchar, 
+    first_name varchar, 
+    last_name varchar, 
+    gender varchar, 
+    level varchar,
+    PRIMARY KEY(user_id)
 )
 """)
 
 song_table_create = ("""
 CREATE TABLE IF NOT EXISTS songs (
-song_id varchar, 
-title varchar NOT NULL, 
-artist_id varchar, 
-year int, 
-duration float NOT NULL
+    song_id varchar, 
+    title varchar NOT NULL, 
+    artist_id varchar, 
+    year int, 
+    duration float NOT NULL,
+    PRIMARY KEY(song_id)
 )
 """)
 
 artist_table_create = ("""
 CREATE TABLE IF NOT EXISTS artists (
-artist_id varchar,
-name varchar NOT NULL, 
-location varchar, 
-latitude float, 
-longitude float
+    artist_id varchar,
+    name varchar NOT NULL, 
+    location varchar, 
+    latitude float, 
+    longitude float,
+    PRIMARY KEY(artist_id)
 )
 """)
 
 time_table_create = ("""
 CREATE TABLE IF NOT EXISTS time (
-start_time time, 
-hour int, 
-day int, 
-week int, 
-month int, 
-year int, 
-weekday varchar
+    start_time time, 
+    hour int, 
+    day int, 
+    week int, 
+    month int, 
+    year int, 
+    weekday varchar,
+    PRIMARY KEY(start_time)
 )
 """)
 
-# STAGING TABLES
+# STEP 1: LOAD TO STAGING TABLES
 
-staging_events_copy = ("""
-    COPY staging_events FROM 's3://udacity-dend/log_data'
-    credentials 'aws_iam_role={}'
-    region 'us-west-2';
-""").format(*config['IAM']['IAM_ARN'])
+staging_events_copy = (
+    """
+    copy         staging_events 
+    from         {}
+    credentials  'aws_iam_role={}'
+    COMPUPDATE OFF STATUPDATE OFF
+    json         {};
+    """).format(config['S3']['LOG_DATA'], 
+                config['IAM']['IAM_ARN'], 
+                config['S3']['LOG_JSONPATH'])
 
-staging_songs_copy = ("""
-    COPY staging_songs FROM 's3://udacity-dend/song_data'
-    credentials 'aws_iam_role={}'
-    region 'us-west-2';
-""").format(*config['IAM']['IAM_ARN'])
+staging_songs_copy = (
+    """
+    copy         staging_songs 
+    from         {}
+    credentials  'aws_iam_role={}'
+    region       'us-west-2'
+    json         'auto'
+    """).format(config['S3']['SONG_DATA'], 
+                config['IAM']['IAM_ARN'])
 
-# FINAL TABLES
+# STEP 2: INSERT INTO FINAL TABLES
 
 songplay_table_insert = ("""
 INSERT INTO songplays
@@ -133,6 +151,7 @@ INSERT INTO songplays
 start_time, user_id, level, song_id, artist_id, session_id, location, user_agent
 )
 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+
 """)
 
 user_table_insert = ("""
@@ -178,5 +197,6 @@ create_table_queries = [staging_events_table_create, staging_songs_table_create,
 drop_table_queries = [staging_events_table_drop, staging_songs_table_drop, songplay_table_drop, user_table_drop, song_table_drop, artist_table_drop, time_table_drop]
 
 copy_table_queries = [staging_events_copy, staging_songs_copy]
+#copy_table_queries = [staging_events_copy]
 
 insert_table_queries = [songplay_table_insert, user_table_insert, song_table_insert, artist_table_insert, time_table_insert]
