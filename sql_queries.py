@@ -46,8 +46,8 @@ CREATE TABLE IF NOT EXISTS staging_songs (
     song_id          varchar,
     num_songs        int,
     artist_id        varchar,
-    artist_latitude  varchar,
-    artist_longitude varchar,
+    artist_latitude  float,
+    artist_longitude float,
     artist_location  varchar,
     artist_name      varchar,
     title            varchar,
@@ -60,48 +60,48 @@ CREATE TABLE IF NOT EXISTS staging_songs (
 ## OLAP tables
 songplay_table_create = ("""
 CREATE TABLE IF NOT EXISTS songplays (
-    songplay_id varchar, 
-    start_time TIMESTAMP NOT NULL, 
-    user_id varchar NOT NULL, 
-    level varchar, 
-    song_id varchar, 
-    artist_id varchar, 
-    session_id varchar, 
-    location varchar, 
-    user_agent varchar,
+    songplay_id   varchar, 
+    start_time    TIMESTAMP NOT NULL, 
+    user_id       varchar NOT NULL, 
+    level         varchar, 
+    song_id       varchar, 
+    artist_id     varchar, 
+    session_id    varchar, 
+    location      varchar, 
+    user_agent    varchar,
     PRIMARY KEY(songplay_id)
 )
 """)
 
 user_table_create = ("""
 CREATE TABLE IF NOT EXISTS users (
-    user_id varchar, 
-    first_name varchar, 
-    last_name varchar, 
-    gender varchar, 
-    level varchar,
+    user_id      varchar, 
+    first_name   varchar, 
+    last_name    varchar, 
+    gender       varchar, 
+    level        varchar,
     PRIMARY KEY(user_id)
 )
 """)
 
 song_table_create = ("""
 CREATE TABLE IF NOT EXISTS songs (
-    song_id varchar, 
-    title varchar NOT NULL, 
+    song_id   varchar, 
+    title     varchar NOT NULL, 
     artist_id varchar, 
-    year int, 
-    duration float NOT NULL,
+    year      int, 
+    duration  float NOT NULL,
     PRIMARY KEY(song_id)
 )
 """)
 
 artist_table_create = ("""
 CREATE TABLE IF NOT EXISTS artists (
-    artist_id varchar,
-    name varchar NOT NULL, 
-    location varchar, 
-    latitude float, 
-    longitude float,
+    artist_id  varchar,
+    name       varchar NOT NULL, 
+    location   varchar, 
+    latitude   float, 
+    longitude  float,
     PRIMARY KEY(artist_id)
 )
 """)
@@ -109,12 +109,12 @@ CREATE TABLE IF NOT EXISTS artists (
 time_table_create = ("""
 CREATE TABLE IF NOT EXISTS time (
     start_time time, 
-    hour int, 
-    day int, 
-    week int, 
-    month int, 
-    year int, 
-    weekday varchar,
+    hour       int, 
+    day        int, 
+    week       int, 
+    month      int, 
+    year       int, 
+    weekday    varchar,
     PRIMARY KEY(start_time)
 )
 """)
@@ -147,55 +147,104 @@ staging_songs_copy = (
 # STEP 2: INSERT INTO FINAL TABLES
 
 songplay_table_insert = ("""
-INSERT INTO songplays
-(
-start_time, user_id, level, song_id, artist_id, session_id, location, user_agent
-)
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+INSERT INTO 
+    songplays(start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)
+SELECT DISTINCT 
+    TIMESTAMP 'epoch' + ts/1000 *INTERVAL '1 second' as start_time, 
+    e.user_id, 
+    e.level,
+    s.song_id,
+    s.artist_id,
+    e.session_id,
+    e.location,
+    e.user_agent
+FROM 
+    staging_events e, staging_songs s
+WHERE e.page = 'NextSong'
+AND e.song_title = s.title
+AND user_id NOT IN (SELECT DISTINCT s.user_id FROM songplays s WHERE s.user_id = user_id
+                   AND s.start_time = start_time AND s.session_id = session_id )
 """)
 
 user_table_insert = ("""
-INSERT INTO users 
-(
-user_id, first_name, last_name, gender, level
-)
-VALUES (%s, %s, %s, %s, %s)
-ON CONFLICT (user_id) DO UPDATE SET level = excluded.level;
+INSERT INTO 
+    users (user_id, first_name, last_name, gender, level)
+SELECT DISTINCT
+    user_id, 
+    firstName, 
+    lastName, 
+    gender, 
+    level
+FROM 
+    staging_events
+WHERE 
+    page = 'NextSong'
+AND user_id NOT IN (SELECT DISTINCT user_id FROM users) 
 """)
 
 song_table_insert = ("""
-INSERT INTO songs 
+INSERT INTO 
+    songs (song_id, title, artist_id, year, duration)
 (
-song_id, title, artist_id, year, duration
+SELECT DISTINCT
+    song_id, 
+    title, 
+    artist_id,
+    year, 
+    duration
+FROM 
+    staging_songs
+WHERE song_id NOT IN (SELECT DISTINCT song_id FROM songs)
 )
-VALUES (%s, %s, %s, %s, %s)
-ON CONFLICT (song_id) DO NOTHING;
 """)
 
 artist_table_insert = ("""
-INSERT INTO artists 
+INSERT INTO 
+    artists (artist_id, name, location, latitude, longitude)
 (
-artist_id, name, location, latitude, longitude
+SELECT DISTINCT
+    artist_id, 
+    artist_name, 
+    artist_location, 
+    artist_latitude, 
+    artist_longitude
+FROM 
+    staging_songs 
+WHERE artist_id NOT IN (SELECT DISTINCT artist_id FROM artists)
 )
-VALUES (%s, %s, %s, %s, %s)
-ON CONFLICT (artist_id) DO NOTHING;
 """)
 
 time_table_insert = ("""
-INSERT INTO time 
-(
-start_time, hour, day, week, month, year, weekday
-)
-VALUES (%s, %s, %s, %s, %s, %s, %s) 
-ON CONFLICT (start_time) DO NOTHING;
+INSERT INTO 
+    time (start_time, hour, day, week, month, year, weekday)
+SELECT 
+        start_time, 
+        EXTRACT(hr from start_time) AS hour,
+        EXTRACT(d from start_time) AS day,
+        EXTRACT(w from start_time) AS week,
+        EXTRACT(mon from start_time) AS month,
+        EXTRACT(yr from start_time) AS year, 
+        EXTRACT(weekday from start_time) AS weekday 
+FROM (
+    SELECT DISTINCT
+        TIMESTAMP 'epoch' + ts/1000 * INTERVAL '1 second' as start_time 
+    FROM 
+        staging_events s     
+    )
+WHERE start_time NOT IN (SELECT DISTINCT start_time FROM time)
 """)
+
 
 # QUERY LISTS
 
+## Create
 create_table_queries = [staging_events_table_create, staging_songs_table_create, songplay_table_create, user_table_create, song_table_create, artist_table_create, time_table_create]
 
+## Drop
 drop_table_queries = [staging_events_table_drop, staging_songs_table_drop, songplay_table_drop, user_table_drop, song_table_drop, artist_table_drop, time_table_drop]
 
+## Staging Load
 copy_table_queries = [staging_events_copy, staging_songs_copy]
 
+## Final Load
 insert_table_queries = [songplay_table_insert, user_table_insert, song_table_insert, artist_table_insert, time_table_insert]
