@@ -19,7 +19,7 @@ time_table_drop = "DROP TABLE IF EXISTS time"
 ## Staging tables
 staging_events_table_create= ("""
     CREATE TABLE IF NOT EXISTS staging_events (
-    event_id       int IDENTITY(0,1),
+    event_id       int,
     artist_name    varchar,
     auth           varchar,
     firstName      varchar,
@@ -37,8 +37,7 @@ staging_events_table_create= ("""
     status         int,
     ts             varchar,
     user_agent     varchar,
-    user_id        varchar,
-    PRIMARY KEY (event_id))
+    user_id        varchar)
 """)
 
 staging_songs_table_create = ("""
@@ -52,8 +51,7 @@ CREATE TABLE IF NOT EXISTS staging_songs (
     artist_name      varchar,
     title            varchar,
     duration         float,
-    year             int,
-    PRIMARY KEY(song_id)
+    year             int
 )
 """)
 
@@ -231,6 +229,8 @@ FROM
     staging_songs  s
 WHERE e.page = 'NextSong'
 AND   e.song_title = s.title
+AND   e.artist_name = s.artist_name
+AND   e.length = s.duration
 AND   user_id NOT IN (SELECT DISTINCT songplays.user_id 
                             FROM  songplays
                             WHERE songplays.user_id = user_id
