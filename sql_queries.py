@@ -107,11 +107,11 @@ CREATE TABLE IF NOT EXISTS time (
 songplay_table_create = ("""
 CREATE TABLE IF NOT EXISTS songplays (
     songplay_id   int IDENTITY(0,1), 
-    start_time    TIMESTAMP NOT NULL, 
-    user_id       varchar NOT NULL, 
+    start_time    TIMESTAMP NOT NULL  REFERENCES time(start_time), 
+    user_id       varchar   NOT NULL  REFERENCES users(user_id), 
     level         varchar, 
-    song_id       varchar, 
-    artist_id     varchar, 
+    song_id       varchar             REFERENCES songs(song_id), 
+    artist_id     varchar             REFERENCES artists(artist_id), 
     session_id    varchar, 
     location      varchar, 
     user_agent    varchar,
@@ -241,7 +241,7 @@ AND   user_id NOT IN (SELECT DISTINCT songplays.user_id
 # QUERY LISTS
 
 ## Create
-create_table_queries = [staging_events_table_create, staging_songs_table_create, songplay_table_create, user_table_create, song_table_create, artist_table_create, time_table_create]
+create_table_queries = [staging_events_table_create, staging_songs_table_create, user_table_create, song_table_create, artist_table_create, time_table_create, songplay_table_create]
 
 ## Drop
 drop_table_queries = [staging_events_table_drop, staging_songs_table_drop, songplay_table_drop, user_table_drop, song_table_drop, artist_table_drop, time_table_drop]
