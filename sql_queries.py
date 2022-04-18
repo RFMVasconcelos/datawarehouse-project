@@ -58,21 +58,6 @@ CREATE TABLE IF NOT EXISTS staging_songs (
 """)
 
 ## OLAP tables
-songplay_table_create = ("""
-CREATE TABLE IF NOT EXISTS songplays (
-    songplay_id   varchar, 
-    start_time    TIMESTAMP NOT NULL, 
-    user_id       varchar NOT NULL, 
-    level         varchar, 
-    song_id       varchar, 
-    artist_id     varchar, 
-    session_id    varchar, 
-    location      varchar, 
-    user_agent    varchar,
-    PRIMARY KEY(songplay_id)
-)
-""")
-
 user_table_create = ("""
 CREATE TABLE IF NOT EXISTS users (
     user_id      varchar, 
@@ -119,6 +104,21 @@ CREATE TABLE IF NOT EXISTS time (
 )
 """)
 
+songplay_table_create = ("""
+CREATE TABLE IF NOT EXISTS songplays (
+    songplay_id   int IDENTITY(0,1), 
+    start_time    TIMESTAMP NOT NULL, 
+    user_id       varchar NOT NULL, 
+    level         varchar, 
+    song_id       varchar, 
+    artist_id     varchar, 
+    session_id    varchar, 
+    location      varchar, 
+    user_agent    varchar,
+    PRIMARY KEY(songplay_id)
+)
+""")
+
 # STEP 1: LOAD TO STAGING TABLES
 
 staging_events_copy = (
@@ -145,26 +145,6 @@ staging_songs_copy = (
                 config['IAM']['IAM_ARN'])
 
 # STEP 2: INSERT INTO FINAL TABLES
-
-songplay_table_insert = ("""
-INSERT INTO 
-    songplays(start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)
-SELECT DISTINCT 
-    TIMESTAMP 'epoch' + ts/1000 *INTERVAL '1 second' as start_time, 
-    e.user_id, 
-    e.level,
-    s.song_id,
-    s.artist_id,
-    e.session_id,
-    e.location,
-    e.user_agent
-FROM 
-    staging_events e, staging_songs s
-WHERE e.page = 'NextSong'
-AND e.song_title = s.title
-AND user_id NOT IN (SELECT DISTINCT s.user_id FROM songplays s WHERE s.user_id = user_id
-                   AND s.start_time = start_time AND s.session_id = session_id )
-""")
 
 user_table_insert = ("""
 INSERT INTO 
@@ -234,6 +214,29 @@ FROM (
 WHERE start_time NOT IN (SELECT DISTINCT start_time FROM time)
 """)
 
+songplay_table_insert = ("""
+INSERT INTO 
+    songplays(start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)
+SELECT DISTINCT 
+    TIMESTAMP 'epoch' + ts/1000 *INTERVAL '1 second' as start_time, 
+    e.user_id, 
+    e.level,
+    s.song_id,
+    s.artist_id,
+    e.session_id,
+    e.location,
+    e.user_agent
+FROM 
+    staging_events e, 
+    staging_songs  s
+WHERE e.page = 'NextSong'
+AND   e.song_title = s.title
+AND   user_id NOT IN (SELECT DISTINCT songplays.user_id 
+                            FROM  songplays
+                            WHERE songplays.user_id = user_id
+                            AND   songplays.start_time = start_time 
+                            AND   songplays.session_id = session_id )
+""")
 
 # QUERY LISTS
 
@@ -247,5 +250,4 @@ drop_table_queries = [staging_events_table_drop, staging_songs_table_drop, songp
 copy_table_queries = [staging_events_copy, staging_songs_copy]
 
 ## Final Load
-#insert_table_queries = [songplay_table_insert, user_table_insert, song_table_insert, artist_table_insert, time_table_insert]
-insert_table_queries = [user_table_insert, song_table_insert, artist_table_insert, time_table_insert]
+insert_table_queries = [user_table_insert, song_table_insert, artist_table_insert, time_table_insert, songplay_table_insert]
