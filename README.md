@@ -1,4 +1,4 @@
-# 2-stage ETL of Songs & Events data from s3 to Amazon Redshift Cloud DataWarehouse
+# 2-stage ETL of songs & events data from s3 to Amazon Redshift Cloud DataWarehouse
 
 This repository contains the necessary scripts to create a Redshift DataWarehouse for a music streaming app (Sparkify), with a performant architecture, as well as the scripts to extract data from 2 sets of files and load it to staging and final db tables on Redshift.
 
