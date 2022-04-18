@@ -42,12 +42,10 @@ python etl.py
 
 ## 2. Directory Structure
 
-* /data - folder containing all the data
-    * /data/log_data - Activity Logs
-    * /data/song_data - Activity Logs
-* create_tables.py - script to create DB + tables
-* etl.py - script to extract data from /data/log_data and /data/song_data and load it to the DB
+* dwh.cfg - config file
+* create_cluster.ipynb - Jupyter notebook to spin-up the resources: IAM, Redshift, VPC; necessary for the project using IaC
+* create_tables.py - script to create tables on Redshift cluster
+* etl.py - script to (1) extract data from s3, (2) load it to staging tables, (3) Transform and Load data into final tables for OLAP
 * sql_queries.py - helper script with all SQL queries
-* etl.ipynb - Jupyter notebook with etl process - for development and converted into etl.py
 * test.ipynb - Jupyter notebook for testing
 * Readme.md
