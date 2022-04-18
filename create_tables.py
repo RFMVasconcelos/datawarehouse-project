@@ -4,6 +4,10 @@ from sql_queries import create_table_queries, drop_table_queries
 
 
 def drop_tables(cur, conn):
+    """
+    - Executes DROP table queries 
+    - Prints when completed each table drop
+    """
     for query in drop_table_queries:
         cur.execute(query)
         conn.commit()
@@ -11,6 +15,10 @@ def drop_tables(cur, conn):
 
 
 def create_tables(cur, conn):
+    """
+    - Executes CREATE table queries 
+    - Prints when completed each table created
+    """
     for query in create_table_queries:
         cur.execute(query)
         conn.commit()
@@ -18,6 +26,13 @@ def create_tables(cur, conn):
 
 
 def main():
+    """
+    - Reads config from dwh.cfg 
+    - Connects to redshift cluster db using psycopg2
+    - Creates a cursor 
+    - Calls in the `drop_tables` function to DROP existing tables
+    - Calls in the `create_tables` function to CREATE new tables
+    """
     config = configparser.ConfigParser()
     config.read('dwh.cfg')
 

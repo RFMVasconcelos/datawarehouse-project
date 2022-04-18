@@ -6,6 +6,7 @@ from sql_queries import copy_table_queries, insert_table_queries
 def load_staging_tables(cur, conn):
     """
     - Executes COPY queries that Load data from S3 into staging tables
+    - Prints when completed each stage of loading
     """
     for query in copy_table_queries:
         cur.execute(query)
@@ -16,6 +17,7 @@ def load_staging_tables(cur, conn):
 def insert_tables(cur, conn):
     """
     - Executes INSERT INTO queries that Extracts data from staging tables, Transforms, and Loads into final OLAP tables
+    - Prints when completed each stage of loading
     """
     for query in insert_table_queries:
         cur.execute(query)
